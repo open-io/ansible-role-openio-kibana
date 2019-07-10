@@ -1,0 +1,17 @@
+---
+openio_kibana_provision_only: false
+openio_kibana_service_enabled: true
+openio_kibana_bind_port: 5601
+openio_kibana_confdir: "/etc/kibana"
+openio_kibana_bind_interface: "{{ openio_bind_mgmt_interface | d(ansible_default_ipv4.alias) }}"
+openio_kibana_bind_address: "{{ openio_bind_mgmt_address \
+      | default(hostvars[inventory_hostname]['ansible_' + openio_kibana_bind_interface]['ipv4']['address']) }}"
+openio_kibana_ext_bind_address: ""
+
+openio_kibana_elasticsearch_group: elasticsearch
+openio_kibana_elasticsearch_address: "{{
+  hostvars[groups[openio_kibana_elasticsearch_group][0]]['openio_bind_mgmt_address'] | d(openio_kibana_bind_address) }}"
+openio_kibana_elasticsearch_port: "6400"
+openio_kibana_elasticsearch_user: ""
+openio_kibana_elasticsearch_pass: ""
+...

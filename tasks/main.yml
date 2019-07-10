@@ -1,0 +1,67 @@
+---
+- name: "Include {{ ansible_distribution }} tasks"
+  include_tasks: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  tags: install
+
+- name: Generate configuration file
+  template:
+    src: "kibana.yml.j2"
+    dest: "{{ openio_kibana_confdir }}/kibana.yml"
+    owner: openio
+    group: openio
+    mode: 0644
+  register: _kibana_conf
+  tags: configure
+
+- name: Restart kibana
+  service:
+    name: kibana
+    state: "{{ 'restarted' if openio_kibana_provision_only else 'started' }}"
+    enabled: "{{ openio_kibana_service_enabled }}"
+  tags: configure
+  when:
+    - _kibana_conf is changed
+
+- name: Ensure kibana is listening
+  wait_for:
+    host: "{{ openio_kibana_bind_address }}"
+    port: "{{ openio_kibana_bind_port }}"
+    delay: 10
+  tags: configure
+
+- name: Create index pattern
+  uri:
+    url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}\
+/api/saved_objects/index-pattern/oio-filebeat"
+    method: POST
+    body:
+      attributes:
+        title: "oio-filebeat"
+        timeFieldName: "@timestamp"
+    headers:
+      kbn-xsrf: anything
+    body_format: json
+    status_code:
+      - 200
+      - 409
+  retries: 5
+  delay: 5
+  register: _fb_index
+  until: "_fb_index.status in [200, 409]"
+
+- name: Set index pattern as default
+  uri:
+    url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}/api/kibana/settings/defaultIndex"
+    method: POST
+    body:
+      value: "oio-filebeat"
+    headers:
+      kbn-xsrf: anything
+    body_format: json
+    status_code:
+      - 200
+  when: _fb_index.status == 200
+...
