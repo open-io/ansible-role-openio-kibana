@@ -6,36 +6,82 @@
     - "{{ ansible_os_family }}.yml"
   tags: install
 
-- name: Generate configuration file
-  template:
-    src: "kibana.yml.j2"
-    dest: "{{ openio_kibana_confdir }}/kibana.yml"
+- name: "Stop/disable default instance"
+  service:
+    name: kibana
+    state: stopped
+    enabled: false
+  tags: install
+
+- name: Create directories
+  file:
+    path: "{{ item.name }}"
+    state: "{{ item.state | d('directory') }}"
+    owner: "{{ item.owner | d('openio') }}"
+    group: "{{ item.group | d('openio') }}"
+    mode: "{{ item.mode | d('0755') }}"
+    recurse: "{{ item.recurse | d(false) | bool }}"
+  with_items:
+    - name: "{{ openio_kibana_gridinit_dir }}"
+    - name: "{{ openio_kibana_sysconfig_dir }}"
+    - name: "{{ openio_kibana_volume }}"
+    - name: "{{ openio_kibana_pid_directory }}"
+    - name: "{{ openio_kibana_log_dir }}"
+      mode: "0750"
+  tags: install
+
+- name: Ensure Kibana pid directory is persistant
+  lineinfile:
+    dest: /etc/tmpfiles.d/kibana.conf
+    create: true
+    line: "d {{ openio_kibana_pid_directory }} 755 openio openio -"
     owner: openio
     group: openio
     mode: 0644
+  tags: configure
+  when: openio_kibana_pid_directory.split(' ')[0] | dirname is match("/run/.*")
+
+- name: Generate configuration files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: openio
+    group: openio
+    mode: 0644
+  with_items:
+    - src: "kibana.yml.j2"
+      dest: "{{ openio_kibana_sysconfig_dir }}/kibana.yml"
+    - src: "gridinit_kibana.conf.j2"
+      dest:
+        "{{ openio_kibana_gridinit_dir }}/{{ openio_kibana_gridinit_file_prefix}}{{ openio_kibana_servicename }}.conf"
   register: _kibana_conf
   tags: configure
 
 - name: Restart kibana
-  service:
-    name: kibana
-    state: "{{ 'restarted' if openio_kibana_provision_only else 'started' }}"
-    enabled: "{{ openio_kibana_service_enabled }}"
-  tags: configure
+  shell: |
+    gridinit_cmd reload
+    gridinit_cmd restart {{ openio_kibana_namespace }}-{{ openio_kibana_servicename }}
   when:
     - _kibana_conf is changed
-
-- name: Ensure kibana is listening
-  wait_for:
-    host: "{{ openio_kibana_bind_address }}"
-    port: "{{ openio_kibana_bind_port }}"
-    delay: 10
+    - not openio_kibana_provision_only
   tags: configure
+
+- name: Wait for kibana to be available
+  uri:
+    url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}/api/status"
+    status_code: 200
+    timeout: 2
+  register: _kibana_status
+  retries: 15
+  delay: 2
+  until: _kibana_status is success and _kibana_status.json.status.overall.state == "green"
+  changed_when: false
+  tags: configure
+  when: not openio_kibana_provision_only
 
 - name: Create index pattern
   uri:
-    url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}\
-/api/saved_objects/index-pattern/oio-filebeat"
+    url: "{{ openio_kibana_url }}/api/saved_objects/index-pattern/oio-filebeat"
     method: POST
     body:
       attributes:
@@ -51,10 +97,11 @@
   delay: 5
   register: _fb_index
   until: "_fb_index.status in [200, 409]"
+  tags: configure
 
 - name: Set index pattern as default
   uri:
-    url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}/api/kibana/settings/defaultIndex"
+    url: "{{ openio_kibana_url }}/api/kibana/settings/defaultIndex"
     method: POST
     body:
       value: "oio-filebeat"
@@ -64,4 +111,9 @@
     status_code:
       - 200
   when: _fb_index.status == 200
+  retries: 5
+  delay: 5
+  register: _fb_index_default
+  until: "_fb_index_default.status in [200]"
+  tags: configure
 ...

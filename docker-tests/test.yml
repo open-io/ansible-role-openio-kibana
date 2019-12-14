@@ -9,6 +9,7 @@
       add_host:
         name: localhost
         groups: elasticsearch
+        openio_bind_mgmt_address: '{{ ansible_default_ipv4.address }}'
       changed_when: false
   roles:
     - role: repo
@@ -22,4 +23,5 @@
       openio_elasticsearch_namespace: "{{ namespace }}"
       openio_elasticsearch_memory: 512M
     - role: role_under_test
+      openio_kibana_namespace: "{{ namespace }}"
 ...

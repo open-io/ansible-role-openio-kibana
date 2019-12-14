@@ -5,8 +5,8 @@
 
 # Tests
 
-@test 'Kibana listens 5601' {
-  run bash -c "curl http://${SUT_IP}:5601"
+@test 'Kibana listens 6910' {
+  run bash -c "curl http://${SUT_IP}:6910"
   echo "output: "$output
   echo "status: "$status
   [[ "${status}" -eq "0" ]]

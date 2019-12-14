@@ -3,12 +3,14 @@
   apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
+  tags: install
 
 - name: Add Kibana repository
   apt_repository:
     repo: 'deb https://artifacts.elastic.co/packages/{{ openio_kibana_version }}/apt stable main'
     state: present
     update_cache: true
+  tags: install
 
 - name: Install packages
   package:
@@ -19,4 +21,5 @@
   until: install_packages is success
   retries: 5
   delay: 2
+  tags: install
 ...
