@@ -1,3 +1,10 @@
 ---
-openio_kibana_version: "6.x"
+openio_kibana_version: "7.x"
+openio_kibana_servicename: "kibana-{{ openio_kibana_serviceid }}"
+
+openio_kibana_sysconfig_dir: "/etc/oio/sds/{{ openio_kibana_namespace }}/{{ openio_kibana_servicename }}"
+openio_kibana_pid_directory: "/run/oio/sds/{{ openio_kibana_namespace }}"
+openio_kibana_log_dir: "/var/log/oio/sds/{{ openio_kibana_namespace }}/{{ openio_kibana_servicename }}"
+
+openio_kibana_url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}"
 ...

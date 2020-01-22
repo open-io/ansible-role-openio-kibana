@@ -3,12 +3,14 @@
   rpm_key:
     key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
+  tags: install
 
 - name: Add Kibana repository
   template:
     src: kibana.repo.j2
     dest: /etc/yum.repos.d/kibana.repo
     mode: 0644
+  tags: install
 
 - name: Install kibana package
   package:
@@ -19,4 +21,5 @@
   until: install_packages is success
   retries: 5
   delay: 2
+  tags: install
 ...

@@ -6,11 +6,7 @@ server.port: {{ openio_kibana_bind_port }}
 # Specifies the address to which the Kibana server will bind. IP addresses and host names are both valid values.
 # The default is 'localhost', which usually means remote machines will not be able to connect.
 # To allow connections from remote users, set this parameter to a non-loopback address.
-{% if openio_kibana_ext_bind_address != "" %}
-server.host: "{{ openio_kibana_ext_bind_address }}"
-{% else %}
 server.host: "{{ openio_kibana_bind_address }}"
-{% endif %}
 
 # Enables you to specify a path to mount Kibana at if you are running behind a proxy.
 # Use the `server.rewriteBasePath` setting to tell Kibana if it should remove the basePath
@@ -31,7 +27,7 @@ server.host: "{{ openio_kibana_bind_address }}"
 #server.name: "your-hostname"
 
 # The URL of the Elasticsearch instance to use for all your queries.
-elasticsearch.url: "http://{{ openio_kibana_elasticsearch_address }}:{{ openio_kibana_elasticsearch_port }}"
+elasticsearch.hosts: ["{{ openio_kibana_elasticsearch_hosts | join('","') }}"]
 
 # When this setting's value is true Kibana uses the hostname specified in the server.host
 # setting. When the value of this setting is false, Kibana uses the hostname of the host
@@ -100,11 +96,14 @@ elasticsearch.password: "{{ openio_kibana_elasticsearch_pass}}"
 # Logs queries sent to Elasticsearch. Requires logging.verbose set to true.
 #elasticsearch.logQueries: false
 
+# Where to store data
+path.data: "{{ openio_kibana_volume }}"
+
 # Specifies the path where Kibana creates the process ID file.
-#pid.file: /var/run/kibana.pid
+pid.file: {{ openio_kibana_pid_directory }}/{{ openio_kibana_servicename }}.pid
 
 # Enables you specify a file where Kibana stores log output.
-#logging.dest: stdout
+logging.dest: {{ openio_kibana_log_dir }}/kibana.log
 
 # Set the value of this setting to true to suppress all logging output.
 #logging.silent: false

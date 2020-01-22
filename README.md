@@ -14,7 +14,7 @@ An Ansible role for installing and configuring Kibana.
 |:------------------------------------- |:--------------- |:--------------- |
 | `openio_kibana_bind_address`          | ``              | ...             |
 | `openio_kibana_bind_interface`        | ``              | ...             |
-| `openio_kibana_bind_port`             | `5601`          | ...             |
+| `openio_kibana_bind_port`             | `6901`          | ...             |
 | `openio_kibana_confdir`               | `"/etc/kibana"` | ...             |
 | `openio_kibana_elasticsearch_address` | ``              | ...             |
 | `openio_kibana_elasticsearch_group`   | ``              | ...             |
