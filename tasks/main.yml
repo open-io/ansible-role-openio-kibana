@@ -78,6 +78,7 @@
   changed_when: false
   tags: configure
   when: not openio_kibana_provision_only
+  ignore_errors: "{{ ansible_check_mode }}"
 
 - name: Create index pattern
   uri:
@@ -98,6 +99,7 @@
   register: _fb_index
   until: "_fb_index.status in [200, 409]"
   tags: configure
+  ignore_errors: "{{ ansible_check_mode }}"
 
 - name: Set index pattern as default
   uri:
@@ -116,4 +118,5 @@
   register: _fb_index_default
   until: "_fb_index_default.status in [200]"
   tags: configure
+  ignore_errors: "{{ ansible_check_mode }}"
 ...
