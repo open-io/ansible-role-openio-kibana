@@ -1,37 +1,40 @@
 ---
-openio_kibana_namespace: "{{ namespace | default('OPENIO') }}"
+openio_kibana_namespace: "{{ namespace | d('OPENIO') }}"
+openio_kibana_maintenance_mode: "{{ openio_maintenance_mode | d(false) }}"
 
-openio_kibana_serviceid: "0"
-openio_kibana_volume: "/var/lib/oio/sds/{{ openio_kibana_namespace }}/kibana-{{ openio_kibana_serviceid }}"
-
-openio_kibana_gridinit_dir: "/etc/gridinit.d/{{ openio_kibana_namespace }}"
-openio_kibana_gridinit_file_prefix: ""
-
-openio_kibana_bind_interface: "{{ ansible_default_ipv4.alias }}"
-openio_kibana_bind_address: "{{ openio_bind_mgmt_address \
-  | d(hostvars[inventory_hostname]['ansible_' + openio_kibana_bind_interface]['ipv4']['address']) }}"
-openio_kibana_bind_port: "{{ default_openio_kibana_global_bind_port | d(6910) }}"
-
-openio_kibana_provision_only: false
+openio_kibana_bind_address: "{{ openio_mgmt_bind_address | d(ansible_default_ipv4.address) }}"
+openio_kibana_bind_port: 6911
 
 openio_kibana_elasticsearch_group: elasticsearch
-openio_kibana_elasticsearch_hosts: "{{ (groups[openio_kibana_elasticsearch_group] \
-  | map('extract', hostvars, ['openio_bind_mgmt_address']) \
-  | map('regex_replace', '^', 'http://') \
-  | map('regex_replace', '$', ':' ~ openio_kibana_elasticsearch_port) \
-  | list | unique) if openio_kibana_elasticsearch_group in groups \
-  else [] }}"
-openio_kibana_elasticsearch_port:
-  "{{ openio_elasticsearch_bind_port | d(default_openio_elasticsearch_global_bind_port) | d(6900) }}"
+openio_kibana_elasticsearch_port: 6903
 
-openio_kibana_elasticsearch_user: null
-openio_kibana_elasticsearch_pass: null
-
-openio_kibana_servicename: "kibana-{{ openio_kibana_serviceid }}"
-
-openio_kibana_sysconfig_dir: "/etc/oio/sds/{{ openio_kibana_namespace }}/{{ openio_kibana_servicename }}"
-openio_kibana_pid_directory: "/run/oio/sds/{{ openio_kibana_namespace }}"
-openio_kibana_log_dir: "/var/log/oio/sds/{{ openio_kibana_namespace }}/{{ openio_kibana_servicename }}"
+openio_kibana_elasticsearch_hosts: |
+  {% set hosts = [] %}
+  {% if openio_kibana_elasticsearch_group in groups %}
+  {%   for host in groups[openio_kibana_elasticsearch_group] %}
+  {%     set port = hostvars[host].openio_elasticsearch_bind_port | d(openio_kibana_elasticsearch_port) %}
+  {%     set address = hostvars[host].openio_elasticsearch_bind_address %}
+  {%     set address = address | d(hostvars[host].openio_bind_mgmt_address) %}
+  {%     set address = address | d(hostvars[host].openio_bind_address) %}
+  {%     set address = address | d(hostvars[host].ansible_default_ipv4.address) %}
+  {%     set url = 'http://' ~ address ~ ':' ~ port %}
+  {%     set _ = hosts.append(url) %}
+  {%   endfor %}
+  {% else %}
+  {%   set url = 'http://' ~ openio_kibana_bind_address ~ ':' ~ openio_kibana_elasticsearch_port %}
+  {%   set _ = hosts.append(url) %}
+  {% endif %}
+  {{ hosts }}
 
 openio_kibana_url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}"
+
+openio_kibana_configuration: {}
+
+openio_kibana_default_configuration:
+  server.port: "{{ openio_kibana_bind_port }}"
+  server.host: "{{ openio_kibana_bind_address }}"
+  elasticsearch.hosts: "{{ openio_kibana_elasticsearch_hosts }}"
+  path.data: "{{ openio_service_volume }}"
+  logging.dest: stdout
+  logging.json: false
 ...

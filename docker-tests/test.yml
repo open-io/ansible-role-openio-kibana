@@ -1,27 +1,28 @@
-# Test playbook
 ---
 - hosts: all
   become: true
   vars:
     namespace: TRAVIS
-  pre_tasks:
-    - name: Add localhost to group 'elasticsearch'
-      add_host:
-        name: localhost
-        groups: elasticsearch
-        openio_bind_mgmt_address: '{{ ansible_default_ipv4.address }}'
-      changed_when: false
-  roles:
-    - role: repo
-      openio_repository_no_log: false
-      openio_repository_mirror_host: mirror2.openio.io
-    - role: users
-    - role: gridinit
-      openio_gridinit_namespace: "{{ namespace }}"
-      openio_gridinit_per_ns: true
-    - role: elasticsearch
-      openio_elasticsearch_namespace: "{{ namespace }}"
-      openio_elasticsearch_memory: 512M
-    - role: role_under_test
-      openio_kibana_namespace: "{{ namespace }}"
+  tasks:
+    - include_role:
+        name: users
+    - include_role:
+        name: repository
+      vars:
+        openio_repository_no_log: false
+        openio_repository_mirror_host: mirror2.openio.io
+    - include_role:
+        name: gridinit
+    - include_role:
+        name: elasticsearch
+      vars:
+        openio_elasticsearch_memory: 128M
+        openio_elasticsearch_sysctl: |
+          {% if ansible_os_family == "RedHat" %}
+          {{   [ { "name": "vm.max_map_count", "value": 262144 } ] }}
+          {% else %}
+          {{   [] }}
+          {% endif %}
+    - include_role:
+        name: role_under_test
 ...

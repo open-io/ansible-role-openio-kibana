@@ -1,84 +1,33 @@
 ---
-- name: "Include {{ ansible_distribution }} tasks"
-  include_tasks: "{{ item }}"
-  with_first_found:
-    - "{{ ansible_distribution }}.yml"
-    - "{{ ansible_os_family }}.yml"
-  tags: install
+- include_role:
+    name: openio-service
+  vars:
+    openio_service_type: "oio-kibana"
+    openio_service_namespace: "{{ openio_kibana_namespace }}"
+    openio_service_maintenance_mode: "{{ openio_kibana_maintenance_mode }}"
+    openio_service_packages:
+      - oio-kibana
+    openio_service_directories:
+      - path: "{{ openio_service_volume }}"
+    openio_service_configuration_files:
+      - name: kibana.yml
 
-- name: "Stop/disable default instance"
-  service:
-    name: kibana
-    state: stopped
-    enabled: false
-  tags: install
+    openio_service_services:
+      - command: >-
+          /usr/share/oio-kibana/bin/kibana
+          -c {{ openio_service_conf_dir }}/kibana.yml
+        redirect_stdout_to_syslog: true
 
-- name: Create directories
-  file:
-    path: "{{ item.name }}"
-    state: "{{ item.state | d('directory') }}"
-    owner: "{{ item.owner | d('openio') }}"
-    group: "{{ item.group | d('openio') }}"
-    mode: "{{ item.mode | d('0755') }}"
-    recurse: "{{ item.recurse | d(false) | bool }}"
-  with_items:
-    - name: "{{ openio_kibana_gridinit_dir }}"
-    - name: "{{ openio_kibana_sysconfig_dir }}"
-    - name: "{{ openio_kibana_volume }}"
-    - name: "{{ openio_kibana_pid_directory }}"
-    - name: "{{ openio_kibana_log_dir }}"
-      mode: "0750"
-  tags: install
-
-- name: Ensure Kibana pid directory is persistant
-  lineinfile:
-    dest: /etc/tmpfiles.d/kibana.conf
-    create: true
-    line: "d {{ openio_kibana_pid_directory }} 755 openio openio -"
-    owner: openio
-    group: openio
-    mode: 0644
-  tags: configure
-  when: openio_kibana_pid_directory.split(' ')[0] | dirname is match("/run/.*")
-
-- name: Generate configuration files
-  template:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    owner: openio
-    group: openio
-    mode: 0644
-  with_items:
-    - src: "kibana.yml.j2"
-      dest: "{{ openio_kibana_sysconfig_dir }}/kibana.yml"
-    - src: "gridinit_kibana.conf.j2"
-      dest:
-        "{{ openio_kibana_gridinit_dir }}/{{ openio_kibana_gridinit_file_prefix}}{{ openio_kibana_servicename }}.conf"
-  register: _kibana_conf
-  tags: configure
-
-- name: Restart kibana
-  shell: |
-    gridinit_cmd reload
-    gridinit_cmd restart {{ openio_kibana_namespace }}-{{ openio_kibana_servicename }}
-  when:
-    - _kibana_conf is changed
-    - not openio_kibana_provision_only
-  tags: configure
-
-- name: Wait for kibana to be available
-  uri:
-    url: "http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port }}/api/status"
-    status_code: 200
-    timeout: 2
-  register: _kibana_status
-  retries: 15
-  delay: 2
-  until: _kibana_status is success and _kibana_status.json.status.overall.state == "green"
-  changed_when: false
-  tags: configure
-  when: not openio_kibana_provision_only
-  ignore_errors: "{{ ansible_check_mode }}"
+    openio_service_checks:
+      - uri:
+          url: "{{ openio_kibana_url }}/api/status"
+        until: >
+          'json' in _return
+          and 'status' in _return.json
+          and 'overall' in _return.json.status
+          and _return.json.status.overall.state | d('nok') == 'green'
+        retries: 30
+        delay: 2
 
 - name: Create index pattern
   uri:
