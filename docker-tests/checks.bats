@@ -5,9 +5,10 @@
 
 # Tests
 
-@test 'Kibana listens 6910' {
-  run bash -c "curl http://${SUT_IP}:6910"
+@test 'Kibana listens on port 6911' {
+  run bash -c "curl -qs http://${SUT_IP}:6911/api/status"
   echo "output: "$output
   echo "status: "$status
   [[ "${status}" -eq "0" ]]
+  [[ "${output}" == *"\"state\":\"green\""* ]]
 }
