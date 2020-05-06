@@ -6,7 +6,7 @@ openio_kibana_bind_address: "{{ openio_mgmt_bind_address | d(ansible_default_ipv
 openio_kibana_bind_port: 6911
 
 openio_kibana_elasticsearch_group: elasticsearch
-openio_kibana_elasticsearch_port: 6903
+openio_kibana_elasticsearch_port: 6904
 
 openio_kibana_elasticsearch_hosts: |
   {% set hosts = [] %}
