@@ -19,7 +19,7 @@ An Ansible role for install kibana. Specifically, the responsibilities of this r
 | `openio_kibana_bind_port` | `6911` | HTTP Binding port |
 | `openio_kibana_url` | `"http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port}}"` | URL to access kibana |
 | `openio_kibana_elasticsearch_group` | `elasticsearch` | Elasticsearch group in the inventory |
-| `openio_kibana_elasticsearch_port` | `6903` | Default port to connect to elasticsearch |
+| `openio_kibana_elasticsearch_port` | `6904` | Default port to connect to elasticsearch |
 
 
 ## Dependencies
