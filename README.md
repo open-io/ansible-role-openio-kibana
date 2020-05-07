@@ -15,7 +15,7 @@ An Ansible role for install kibana. Specifically, the responsibilities of this r
 | :---       | :---    | :---             |
 | `openio_kibana_namespace` | `"{{ namespace \| d('OPENIO') }}"` | OpenIO Namespace |
 | `openio_kibana_maintenance_mode` | `"{{ openio_maintenance_mode \| d(false) }}"` | Maintenance mode |
-| `openio_kibana_bind_address` | `"{{ openio_mgmt_bind_address \| d(ansible_default_ipv4.address) }}"` | Binding IP address |
+| `openio_kibana_bind_address` | `"{{ openio_bind_mgmt_address \| d(ansible_default_ipv4.address) }}"` | Binding IP address |
 | `openio_kibana_bind_port` | `6911` | HTTP Binding port |
 | `openio_kibana_url` | `"http://{{ openio_kibana_bind_address }}:{{ openio_kibana_bind_port}}"` | URL to access kibana |
 | `openio_kibana_elasticsearch_group` | `elasticsearch` | Elasticsearch group in the inventory |
